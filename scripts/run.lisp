@@ -1,0 +1,10 @@
+(setf *debugger-hook*
+      (lambda (c h)
+        (declare (ignore h))
+        (format *error-output* "~&FAIL: ~A~%" c)
+        (uiop:quit 1)))
+#+sbcl (sb-ext:disable-debugger)
+(asdf:load-system "mcp-parity")
+(mcp-parity:print-matrix)
+(asdf:test-system "mcp-parity")
+(uiop:quit 0)
