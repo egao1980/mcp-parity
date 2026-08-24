@@ -5,7 +5,7 @@
   :license "MIT"
   :depends-on ("mcp-protocol"
                "mcp-backend-stdio"
-               "mcp-backend-streamable-http"
+               (:version "mcp-backend-streamable-http" "0.1.1")
                "rpc-protocol"
                "rpc-backend-inprocess"
                "process-backend-uiop"

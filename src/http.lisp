@@ -2,16 +2,12 @@
 
 (defun %ensure-http-backend ()
   (or http-protocol:*http-backend*
-      (progn
-        (asdf:load-system "http-backend-dexador")
-        (setf http-protocol:*http-backend*
-              (http-backend-dexador:make-dexador-backend)))))
+      (setf http-protocol:*http-backend*
+            (http-backend-dexador:make-dexador-backend))))
 
 (defun %ensure-http-server ()
   (or http-server-protocol:*http-server-backend*
-      (progn
-        (asdf:load-system "http-server-backend-hunchentoot")
-        (http-server-backend-hunchentoot:use-hunchentoot-backend))))
+      (http-server-backend-hunchentoot:use-hunchentoot-backend)))
 
 (defun %mcp-url (port)
   (format nil "http://127.0.0.1:~a/mcp" port))
