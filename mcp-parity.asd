@@ -1,14 +1,20 @@
 (defsystem "mcp-parity"
-  :version "0.1.0"
+  :version "0.1.1"
   :description "Interop canary: mcp-protocol vs FastMCP 3 / official Node MCP SDK"
   :author "egao1980"
   :license "MIT"
   :depends-on ("mcp-protocol"
                "mcp-backend-stdio"
+               "mcp-backend-streamable-http"
                "rpc-protocol"
                "rpc-backend-inprocess"
                "process-backend-uiop"
+               "http-protocol"
+               "http-backend-dexador"
+               "http-server-protocol"
+               "http-server-backend-hunchentoot"
                "uiop"
+               "usocket"
                "rove")
   :serial t
   :pathname "src"
@@ -16,6 +22,7 @@
                (:file "catalog")
                (:file "peers")
                (:file "harness")
+               (:file "http")
                (:file "report"))
   :in-order-to ((test-op (test-op "mcp-parity/tests"))))
 
