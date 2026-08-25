@@ -11,7 +11,8 @@
          (call (mcp-protocol:call-tool client "echo"
                                        (mcp-protocol:json-object "msg" "pong")))
          (res (mcp-protocol:read-resource client "memo://hi"))
-         (prompt (mcp-protocol:get-prompt client "greet")))
+         (prompt (mcp-protocol:get-prompt client "greet"))
+         (invalid (probe-invalid-echo client)))
     (list :era (mcp-protocol:mcp-client-era client)
           :tools (mapcar #'mcp-protocol:mcp-tool-name tools)
           :echo (tool-text call)
@@ -19,7 +20,9 @@
                            (first (and (vectorp contents) (plusp (length contents))
                                        (aref contents 0))))
                       (or (mcp-protocol:param first "text") ""))
-          :prompt (prompt-text prompt))))
+          :prompt (prompt-text prompt)
+          :invalid-missing (getf invalid :missing)
+          :invalid-type (getf invalid :wrong-type))))
 
 (defun lisp-inprocess-talk ()
   (let* ((server (make-parity-server))
@@ -60,22 +63,39 @@
       ((listp raw) raw)
       (t (list raw)))))
 
-(defun foreign-client-talk (kind server-cmd)
-  (let* ((cmd (client-command kind server-cmd)))
-    (multiple-value-bind (out err)
-        (uiop:run-program cmd
-                          :output :string
-                          :error-output :string
-                          :ignore-error-status t)
+(defun %js-code (obj key)
+  (let ((v (and obj (gethash key obj))))
+    (cond
+      ((integerp v) v)
+      ((or (equal v "isError") (eq v :tool-is-error)) :tool-is-error)
+      ((and (stringp v) (plusp (length v)))
+       (or (ignore-errors (parse-integer v :junk-allowed t)) v))
+      ((eq v t) :accepted)
+      ((eq v :null) nil)
+      (t v))))
+
+(defun %foreign-report (rec)
+  (list :era (gethash "era" rec)
+        :tools (%js-tools rec)
+        :echo (%js-string rec "echo")
+        :resource (%js-string rec "resource")
+        :prompt (%js-string rec "prompt")
+        :invalid-missing (%js-code rec "invalidMissing")
+        :invalid-type (%js-code rec "invalidType")))
+
+(defun %run-foreign-client (kind cmd)
+  (multiple-value-bind (out err)
+      (uiop:run-program cmd
+                        :output :string
+                        :error-output :string
+                        :ignore-error-status t)
     (let ((parsed (loop for line in (uiop:split-string out :separator '(#\newline))
                         for rec = (parse-json-line line)
                         when rec collect rec)))
       (unless parsed
         (error "foreign client ~a produced no JSON~%cmd: ~s~%stdout:~%~a~%stderr:~%~a"
                kind cmd out err))
-      (let ((rec (first (last parsed))))
-        (list :era (gethash "era" rec)
-              :tools (%js-tools rec)
-              :echo (%js-string rec "echo")
-              :resource (%js-string rec "resource")
-              :prompt (%js-string rec "prompt")))))))
+      (%foreign-report (first (last parsed))))))
+
+(defun foreign-client-talk (kind server-cmd)
+  (%run-foreign-client kind (client-command kind server-cmd)))

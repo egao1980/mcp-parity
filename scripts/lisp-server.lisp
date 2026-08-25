@@ -47,6 +47,11 @@
    server
    (mcp-protocol:make-mcp-tool
     "echo" :description "echo msg"
+    :input-schema (mcp-protocol:json-object
+                   "type" "object"
+                   "properties" (mcp-protocol:json-object
+                                 "msg" (mcp-protocol:json-object "type" "string"))
+                   "required" #("msg"))
     :handler (lambda (args)
                (mcp-protocol:tool-result
                 (list (mcp-protocol:make-text-content

@@ -64,3 +64,29 @@
          (equal echo "pong")
          (search "hello" (or body ""))
          (search "say hi" (or prompt "")))))
+
+(defun %invalid-params-p (code)
+  (eql code rpc-protocol:+invalid-params+))
+
+(defun %input-rejected-p (code)
+  "Spec is -32602. FastMCP 3 currently returns a tool isError result instead."
+  (or (%invalid-params-p code)
+      (member code '(:tool-is-error "isError") :test #'equal)))
+
+(defun probe-invalid-echo (client)
+  "Call echo with missing `msg` and wrong-type `msg`. Return plist of RPC codes.
+   Spec: inputSchema failure is JSON-RPC -32602 (invalid params)."
+  (flet ((code (args)
+           (handler-case
+               (let ((result (mcp-protocol:call-tool client "echo" args)))
+                 (if (and (hash-table-p result) (mcp-protocol:param result "isError"))
+                     :tool-is-error
+                     :accepted))
+             (mcp-protocol:mcp-error (c)
+               (mcp-protocol:mcp-error-code c)))))
+    (list :missing (code (mcp-protocol:json-object))
+          :wrong-type (code (mcp-protocol:json-object "msg" 1)))))
+
+(defun input-validation-ok-p (report)
+  (and (%input-rejected-p (getf report :invalid-missing))
+       (%input-rejected-p (getf report :invalid-type))))

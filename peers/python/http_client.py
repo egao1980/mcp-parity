@@ -7,6 +7,8 @@ import sys
 
 from fastmcp import Client
 
+from probe import probe_invalid_echo
+
 
 def _text(result: object) -> str:
     data = getattr(result, "data", None)
@@ -46,6 +48,7 @@ async def main() -> None:
             "echo": _text(echo),
             "resource": _resource_text(resource),
             "prompt": _prompt_text(prompt),
+            **(await probe_invalid_echo(client)),
         }
         print(json.dumps(rec, ensure_ascii=False), flush=True)
 
