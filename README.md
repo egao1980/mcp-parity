@@ -52,6 +52,7 @@ See [MATRIX.md](MATRIX.md).
 
 - Sibling-process `server/discover` probe when a legacy server dies on unknown methods
 - FastMCP 3 tool `isError` vs spec `-32602` for `inputSchema` failures
+- Published `mcp-backend-streamable-http:0.1.1` `make-mcp-app` maps uncaught `mcp-error` → `-32603` (HTTP fixture wraps like `serve-mcp`)
 - `input_required` / Tasks / OAuth
 
 ## License

@@ -33,3 +33,4 @@ Catalog: `echo` tool, `memo://hi` resource, `greet` prompt.
 Era may land modern (`2026-07-28`) or legacy (`2025-11-25`); both count as `have` if the catalog works.
 HTTP GET SSE is optional (Lisp answers 405); Node SDK treats that as spec-ok.
 `echo` inputSchema: spec is JSON-RPC `-32602`. FastMCP 3 currently returns a tool `isError` result — still counted as validation `have`.
+Lisp HTTP fixture wraps `dispatch-mcp-method` like `serve-mcp` (published `make-mcp-app` 0.1.1 maps uncaught `mcp-error` → `-32603`).

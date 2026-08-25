@@ -8,6 +8,7 @@
                (:version "mcp-backend-streamable-http" "0.1.1")
                "rpc-protocol"
                "rpc-protocol-json"
+               "rpc-backend-http"
                "rpc-backend-inprocess"
                "process-backend-uiop"
                "http-protocol"
