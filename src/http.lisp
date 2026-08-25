@@ -13,29 +13,14 @@
 (defun %mcp-url (port)
   (format nil "http://127.0.0.1:~a/mcp" port))
 
-(defun %dispatch-as-rpc (server method params)
-  "Same wrap as `serve-mcp`. Published streamable-http 0.1.1 `make-mcp-app`
-   is a thin `make-rpc-app` and maps uncaught `mcp-error` → -32603."
-  (handler-case
-      (mcp-protocol:dispatch-mcp-method server method params)
-    (mcp-protocol:mcp-error (c)
-      (error 'rpc-protocol:rpc-error
-             :message (or (mcp-protocol:mcp-error-message c) "mcp error")
-             :code (or (mcp-protocol:mcp-error-code c)
-                       rpc-protocol:+internal-error+)
-             :data (mcp-protocol:mcp-error-data c)))))
-
 (defun call-with-lisp-http-server (fn)
   (%ensure-jsonrpc-codec)
   (%ensure-http-server)
   (mcp-backend-streamable-http:use-streamable-http-mcp-backend)
-  (let ((port (%free-port))
-        (server (make-parity-server)))
+  (let ((port (%free-port)))
     (http-server-protocol:with-server
-        (s (rpc-backend-http:make-rpc-app
-            (lambda (method params)
-              (%dispatch-as-rpc server method params))
-            :path "/mcp")
+        (s (mcp-backend-streamable-http:make-mcp-app (make-parity-server)
+                                                     :path "/mcp")
            :host "127.0.0.1" :port port)
       (sleep 0.15)
       (funcall fn (%mcp-url port)))))
