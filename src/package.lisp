@@ -15,12 +15,15 @@
            #:with-peer-http-server
            #:http-peer-available-p
            #:catalog-ok-p
+           #:input-validation-ok-p
+           #:probe-invalid-echo
            #:tool-text
            #:prompt-text
            #:print-matrix
            #:peer-server-command
            #:lisp-server-command
            #:client-command
-           #:%ensure-process-backend))
+           #:%ensure-process-backend
+           #:%ensure-jsonrpc-codec))
 
 (in-package #:mcp-parity)

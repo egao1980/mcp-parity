@@ -1,5 +1,6 @@
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
+import { probeInvalidEcho } from "./probe.mjs";
 
 function textOf(result) {
   const content = result?.content;
@@ -53,6 +54,7 @@ const rec = {
   echo: textOf(echo),
   resource: resourceText(resource),
   prompt: promptText(prompt),
+  ...(await probeInvalidEcho(client)),
 };
 process.stdout.write(`${JSON.stringify(rec)}\n`);
 await client.close?.();

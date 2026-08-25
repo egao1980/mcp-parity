@@ -1,12 +1,13 @@
 (defsystem "mcp-parity"
-  :version "0.1.1"
+  :version "0.1.2"
   :description "Interop canary: mcp-protocol vs FastMCP 3 / official Node MCP SDK"
   :author "egao1980"
   :license "MIT"
-  :depends-on ("mcp-protocol"
+  :depends-on ((:version "mcp-protocol" "0.2.0")
                "mcp-backend-stdio"
-               (:version "mcp-backend-streamable-http" "0.1.1")
+               (:version "mcp-backend-streamable-http" "0.2.0")
                "rpc-protocol"
+               "rpc-protocol-json"
                "rpc-backend-inprocess"
                "process-backend-uiop"
                "http-protocol"

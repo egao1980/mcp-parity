@@ -1,6 +1,7 @@
 (in-package #:mcp-parity)
 
 (defun %ensure-http-backend ()
+  (%ensure-jsonrpc-codec)
   (or http-protocol:*http-backend*
       (setf http-protocol:*http-backend*
             (http-backend-dexador:make-dexador-backend))))
@@ -13,6 +14,7 @@
   (format nil "http://127.0.0.1:~a/mcp" port))
 
 (defun call-with-lisp-http-server (fn)
+  (%ensure-jsonrpc-codec)
   (%ensure-http-server)
   (mcp-backend-streamable-http:use-streamable-http-mcp-backend)
   (let ((port (%free-port)))
@@ -39,21 +41,4 @@
     (lisp-http-talk url)))
 
 (defun foreign-http-client-talk (kind url)
-  (let* ((cmd (http-client-command kind url)))
-    (multiple-value-bind (out err)
-        (uiop:run-program cmd
-                          :output :string
-                          :error-output :string
-                          :ignore-error-status t)
-      (let ((parsed (loop for line in (uiop:split-string out :separator '(#\newline))
-                          for rec = (parse-json-line line)
-                          when rec collect rec)))
-        (unless parsed
-          (error "foreign HTTP client ~a produced no JSON~%cmd: ~s~%stdout:~%~a~%stderr:~%~a"
-                 kind cmd out err))
-        (let ((rec (first (last parsed))))
-          (list :era (gethash "era" rec)
-                :tools (%js-tools rec)
-                :echo (%js-string rec "echo")
-                :resource (%js-string rec "resource")
-                :prompt (%js-string rec "prompt")))))))
+  (%run-foreign-client kind (http-client-command kind url)))
