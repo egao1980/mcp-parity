@@ -36,7 +36,8 @@
                          :configure-asdf-source-registry)
        (uiop:symbol-call :cl-repository-client/asdf-integration
                          :load-system-init-files))
-     (asdf:load-system "mcp-backend-stdio"))))
+     (asdf:load-system "mcp-backend-stdio")
+     (asdf:load-system "rpc-protocol-json"))))
 
 (mcp-backend-stdio:use-stdio-mcp-backend)
 

@@ -1,6 +1,7 @@
 (in-package #:mcp-parity)
 
 (defun %ensure-http-backend ()
+  (%ensure-jsonrpc-codec)
   (or http-protocol:*http-backend*
       (setf http-protocol:*http-backend*
             (http-backend-dexador:make-dexador-backend))))
@@ -13,6 +14,7 @@
   (format nil "http://127.0.0.1:~a/mcp" port))
 
 (defun call-with-lisp-http-server (fn)
+  (%ensure-jsonrpc-codec)
   (%ensure-http-server)
   (mcp-backend-streamable-http:use-streamable-http-mcp-backend)
   (let ((port (%free-port)))

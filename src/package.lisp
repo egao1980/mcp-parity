@@ -23,6 +23,7 @@
            #:peer-server-command
            #:lisp-server-command
            #:client-command
-           #:%ensure-process-backend))
+           #:%ensure-process-backend
+           #:%ensure-jsonrpc-codec))
 
 (in-package #:mcp-parity)

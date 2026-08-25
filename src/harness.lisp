@@ -1,6 +1,13 @@
 (in-package #:mcp-parity)
 
+(defun %ensure-jsonrpc-codec ()
+  (unless rpc-protocol:*rpc-codec*
+    (asdf:load-system "rpc-protocol-json")
+    (rpc-protocol-json:use-jsonrpc-codec))
+  rpc-protocol:*rpc-codec*)
+
 (defun %ensure-process-backend ()
+  (%ensure-jsonrpc-codec)
   (or process-protocol:*process-backend*
       (progn
         (asdf:load-system "process-backend-uiop")
@@ -38,6 +45,7 @@
 
 (defun lisp-stdio-talk (command)
   (%ensure-process-backend)
+  (%ensure-jsonrpc-codec)
   (mcp-backend-stdio:use-stdio-mcp-backend)
   (let ((client (mcp-protocol:mcp-connect :command command :probe t
                                           :name "mcp-parity-lisp"
@@ -84,6 +92,7 @@
         :invalid-type (%js-code rec "invalidType")))
 
 (defun %run-foreign-client (kind cmd)
+  (%ensure-jsonrpc-codec)
   (multiple-value-bind (out err)
       (uiop:run-program cmd
                         :output :string
