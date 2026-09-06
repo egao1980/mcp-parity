@@ -1,5 +1,6 @@
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
+import { attachInputHandlers, CLIENT_CAPABILITIES, probeNeedInput } from "./input.mjs";
 import { probeInvalidEcho } from "./probe.mjs";
 
 function textOf(result) {
@@ -39,8 +40,12 @@ const transport = new StdioClientTransport({
   env: childEnv(),
 });
 
-const client = new Client({ name: "mcp-parity-node", version: "0.1.0" });
+const client = new Client(
+  { name: "mcp-parity-node", version: "0.1.0" },
+  { capabilities: CLIENT_CAPABILITIES },
+);
 client.setVersionNegotiation({ mode: "auto" });
+attachInputHandlers(client);
 await client.connect(transport, { timeout: 120_000 });
 
 const tools = await client.listTools();
@@ -55,6 +60,7 @@ const rec = {
   resource: resourceText(resource),
   prompt: promptText(prompt),
   ...(await probeInvalidEcho(client)),
+  ...(await probeNeedInput(client)),
 };
 process.stdout.write(`${JSON.stringify(rec)}\n`);
 await client.close?.();

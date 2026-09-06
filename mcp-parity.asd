@@ -1,5 +1,5 @@
 (defsystem "mcp-parity"
-  :version "0.1.2"
+  :version "0.1.3"
   :description "Interop canary: mcp-protocol vs FastMCP 3 / official Node MCP SDK"
   :author "egao1980"
   :license "MIT"

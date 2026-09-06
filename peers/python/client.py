@@ -9,7 +9,19 @@ import sys
 from fastmcp import Client
 from fastmcp.client.transports import StdioTransport
 
-from probe import probe_invalid_echo
+from probe import probe_invalid_echo, probe_need_input
+
+
+async def _elicit(message, response_type, params, context):  # noqa: ANN001
+    return {"value": "ok"}
+
+
+async def _sample(messages, params, context):  # noqa: ANN001
+    return {
+        "role": "assistant",
+        "model": "mcp-parity",
+        "content": {"type": "text", "text": "ok"},
+    }
 
 
 def _text(result: object) -> str:
@@ -44,7 +56,11 @@ async def main() -> None:
         args=sys.argv[2:],
         env=dict(os.environ),
     )
-    async with Client(transport) as client:
+    async with Client(
+        transport,
+        elicitation_handler=_elicit,
+        sampling_handler=_sample,
+    ) as client:
         tools = await client.list_tools()
         echo = await client.call_tool("echo", {"msg": "pong"})
         resource = await client.read_resource("memo://hi")
@@ -56,6 +72,7 @@ async def main() -> None:
             "resource": _resource_text(resource),
             "prompt": _prompt_text(prompt),
             **(await probe_invalid_echo(client)),
+            **(await probe_need_input(client)),
         }
         print(json.dumps(rec, ensure_ascii=False), flush=True)
 

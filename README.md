@@ -20,7 +20,7 @@ Streamable HTTP
   Python client → Lisp server   (FastMCP Client URL)
 ```
 
-Dual-era: modern `2026-07-28` (`server/discover`) and legacy `2025-11-25` (`initialize`). A pass is a working catalog (`echo` / `memo://hi` / `greet`) **and** `echo` inputSchema rejection (`{}` / `{msg:1}` → JSON-RPC `-32602`), not a forced era.
+Dual-era: modern `2026-07-28` (`server/discover`) and legacy `2025-11-25` (`initialize`). A pass is a working catalog (`echo` / `need-input` / `memo://hi` / `greet`) **and** `echo` inputSchema rejection (`{}` / `{msg:1}` → JSON-RPC `-32602`), not a forced era. `need-input` is the `input_required` / elicitation round-trip.
 
 ## Run
 
@@ -52,7 +52,7 @@ See [MATRIX.md](MATRIX.md).
 
 - Sibling-process `server/discover` probe when a legacy server dies on unknown methods
 - FastMCP 3 tool `isError` vs spec `-32602` for `inputSchema` failures
-- `input_required` / Tasks / OAuth
+- Tasks / OAuth
 
 ## License
 
