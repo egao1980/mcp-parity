@@ -25,12 +25,21 @@
       (sleep 0.15)
       (funcall fn (%mcp-url port)))))
 
+(defun %sync-http-protocol-version (client)
+  (let ((ver (mcp-protocol:mcp-client-protocol-version client))
+        (transport (mcp-protocol:mcp-client-transport client)))
+    (when (and (stringp ver)
+               (typep transport 'mcp-backend-streamable-http:streamable-http-rpc-transport))
+      (setf (mcp-backend-streamable-http:transport-protocol-version transport) ver)))
+  client)
+
 (defun lisp-http-talk (url)
   (%ensure-http-backend)
   (mcp-backend-streamable-http:use-streamable-http-mcp-backend)
-  (let ((client (mcp-protocol:mcp-connect :url url :probe t
-                                          :name "mcp-parity-lisp"
-                                          :version "0.1.0")))
+  (let ((client (%connect-parity-client :url url
+                                        :name "mcp-parity-lisp"
+                                        :version "0.1.0")))
+    (%sync-http-protocol-version client)
     (%report client)))
 
 (defun lisp-http-lisp-server ()

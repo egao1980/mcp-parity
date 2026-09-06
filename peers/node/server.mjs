@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
-import * as z from "zod/v4";
+import { registerParityCatalog } from "./catalog.mjs";
 
 serveStdio(() => {
   const server = new McpServer(
@@ -10,32 +10,6 @@ serveStdio(() => {
       capabilities: { tools: {}, resources: {}, prompts: {} },
     },
   );
-  server.registerTool(
-    "echo",
-    {
-      description: "echo msg",
-      inputSchema: z.object({ msg: z.string() }),
-    },
-    async ({ msg }) => ({
-      content: [{ type: "text", text: msg }],
-    }),
-  );
-  server.registerResource(
-    "hi",
-    "memo://hi",
-    { description: "hello memo", mimeType: "text/plain" },
-    async (uri) => ({
-      contents: [{ uri: String(uri), mimeType: "text/plain", text: "hello" }],
-    }),
-  );
-  server.registerPrompt(
-    "greet",
-    { description: "say hi" },
-    async () => ({
-      messages: [
-        { role: "user", content: { type: "text", text: "say hi" } },
-      ],
-    }),
-  );
+  registerParityCatalog(server);
   return server;
 });

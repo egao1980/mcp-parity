@@ -1,9 +1,33 @@
 (in-package #:mcp-parity)
 
+(defun %elicitation-params ()
+  (mcp-protocol:json-object
+   "message" "need a value"
+   "requestedSchema"
+   (mcp-protocol:json-object
+    "type" "object"
+    "properties" (mcp-protocol:json-object
+                  "value" (mcp-protocol:json-object "type" "string"))
+    "required" #("value"))))
+
+(defun %need-input-handler (waiting-box args)
+  (declare (ignore args))
+  (if (car waiting-box)
+      (progn
+        (setf (car waiting-box) nil)
+        (mcp-protocol:request-elicitation (%elicitation-params)))
+      (progn
+        (setf (car waiting-box) t)
+        (mcp-protocol:tool-result
+         (list (mcp-protocol:make-text-content "got-input"))))))
+
 (defun make-parity-server (&key (name "mcp-parity-lisp") (version "0.1.0"))
   (let ((server (make-instance 'mcp-protocol:mcp-server
                                :name name :version version
-                               :instructions "stdio dual-era parity fixture")))
+                               :instructions "stdio dual-era parity fixture"))
+        ;; tools/call dispatch does not yet hand inputResponses to the handler.
+        ;; First call returns input_required; the client's MRTR retry completes.
+        (waiting-box (list t)))
     (mcp-protocol:register-tool
      server
      (mcp-protocol:make-mcp-tool
@@ -17,6 +41,13 @@
                  (mcp-protocol:tool-result
                   (list (mcp-protocol:make-text-content
                          (or (mcp-protocol:param args "msg") "")))))))
+    (mcp-protocol:register-tool
+     server
+     (mcp-protocol:make-mcp-tool
+      "need-input" :description "trigger elicitation / input_required"
+      :input-schema (mcp-protocol:json-object "type" "object")
+      :handler (lambda (args)
+                 (%need-input-handler waiting-box args))))
     (mcp-protocol:register-resource
      server
      (mcp-protocol:make-mcp-resource
@@ -90,3 +121,28 @@
 (defun input-validation-ok-p (report)
   (and (%input-rejected-p (getf report :invalid-missing))
        (%input-rejected-p (getf report :invalid-type))))
+
+(defun %need-input-text (result)
+  (or (tool-text result)
+      (and (hash-table-p result) (mcp-protocol:param result "resultType"))
+      ""))
+
+(defun probe-need-input (client)
+  "Call need-input. Lisp client auto-retries input_required via fulfill-input-requests."
+  (handler-case
+      (let ((result (mcp-protocol:call-tool client "need-input"
+                                            (mcp-protocol:json-object))))
+        (list :text (%need-input-text result)
+              :result-type (and (hash-table-p result)
+                                (mcp-protocol:param result "resultType"))))
+    (mcp-protocol:mcp-error (c)
+      (list :text (mcp-protocol:mcp-error-message c)
+            :result-type nil))))
+
+(defun input-required-ok-p (report)
+  (let ((tools (getf report :tools))
+        (text (or (getf report :need-input) ""))
+        (rtype (getf report :need-input-type)))
+    (and (find "need-input" tools :test #'equal)
+         (search "got-input" text)
+         (not (equal rtype "input_required")))))

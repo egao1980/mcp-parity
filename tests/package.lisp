@@ -5,4 +5,5 @@
 
 (defun %catalog+schema (report)
   (ok (catalog-ok-p report))
-  (ok (input-validation-ok-p report)))
+  (ok (input-validation-ok-p report))
+  (ok (input-required-ok-p report)))

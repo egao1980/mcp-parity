@@ -16,7 +16,9 @@
            #:http-peer-available-p
            #:catalog-ok-p
            #:input-validation-ok-p
+           #:input-required-ok-p
            #:probe-invalid-echo
+           #:probe-need-input
            #:tool-text
            #:prompt-text
            #:print-matrix
