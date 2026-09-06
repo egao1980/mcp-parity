@@ -36,9 +36,70 @@
                          :configure-asdf-source-registry)
        (uiop:symbol-call :cl-repository-client/asdf-integration
                          :load-system-init-files))
-     (asdf:load-system "mcp-parity")
+     (asdf:load-system "mcp-backend-stdio")
      (asdf:load-system "rpc-protocol-json"))))
 
 (mcp-backend-stdio:use-stdio-mcp-backend)
-(mcp-protocol:mcp-serve (mcp-parity:make-parity-server))
-(uiop:quit 0)
+
+(defun %elicitation-params ()
+  (mcp-protocol:json-object
+   "message" "need a value"
+   "requestedSchema"
+   (mcp-protocol:json-object
+    "type" "object"
+    "properties" (mcp-protocol:json-object
+                  "value" (mcp-protocol:json-object "type" "string"))
+    "required" #("value"))))
+
+(let ((server (make-instance 'mcp-protocol:mcp-server
+                             :name "mcp-parity-lisp" :version "0.1.0"
+                             :instructions "stdio dual-era parity fixture"))
+      (waiting t))
+  (mcp-protocol:register-tool
+   server
+   (mcp-protocol:make-mcp-tool
+    "echo" :description "echo msg"
+    :input-schema (mcp-protocol:json-object
+                   "type" "object"
+                   "properties" (mcp-protocol:json-object
+                                 "msg" (mcp-protocol:json-object "type" "string"))
+                   "required" #("msg"))
+    :handler (lambda (args)
+               (mcp-protocol:tool-result
+                (list (mcp-protocol:make-text-content
+                       (or (mcp-protocol:param args "msg") "")))))))
+  (mcp-protocol:register-tool
+   server
+   (mcp-protocol:make-mcp-tool
+    "need-input" :description "trigger elicitation / input_required"
+    :input-schema (mcp-protocol:json-object "type" "object")
+    :handler (lambda (args)
+               (declare (ignore args))
+               (if waiting
+                   (progn
+                     (setf waiting nil)
+                     (mcp-protocol:request-elicitation (%elicitation-params)))
+                   (progn
+                     (setf waiting t)
+                     (mcp-protocol:tool-result
+                      (list (mcp-protocol:make-text-content "got-input"))))))))
+  (mcp-protocol:register-resource
+   server
+   (mcp-protocol:make-mcp-resource
+    "memo://hi" :name "hi"
+    :handler (lambda (res)
+               (declare (ignore res))
+               "hello")))
+  (mcp-protocol:register-prompt
+   server
+   (mcp-protocol:make-mcp-prompt
+    "greet" :description "say hi"
+    :handler (lambda (args)
+               (declare (ignore args))
+               (mcp-protocol:json-object
+                "messages"
+                (vector (mcp-protocol:json-object
+                         "role" "user"
+                         "content" (mcp-protocol:make-text-content "say hi")))))))
+  (mcp-protocol:mcp-serve server)
+  (uiop:quit 0))

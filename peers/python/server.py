@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-import mcp.types
+import mcp.types as mcp_types
 from fastmcp import FastMCP
 
 mcp = FastMCP(
@@ -43,20 +43,20 @@ def greet() -> str:
 
 def _install_need_input_mrtr() -> None:
     """Return MRTR input_required from need-input. FastMCP 3 has no MRTR helper."""
-    inner = mcp._mcp_server.request_handlers[mcp.types.CallToolRequest]
+    inner = mcp._mcp_server.request_handlers[mcp_types.CallToolRequest]
 
-    async def handler(req: mcp.types.CallToolRequest) -> mcp.types.ServerResult:
+    async def handler(req: mcp_types.CallToolRequest) -> mcp_types.ServerResult:
         if req.params.name != "need-input":
             return await inner(req)
         extra: dict[str, Any] = dict(req.params.model_extra or {})
         if extra.get("inputResponses"):
-            return mcp.types.ServerResult(
-                mcp.types.CallToolResult(
-                    content=[mcp.types.TextContent(type="text", text="got-input")]
+            return mcp_types.ServerResult(
+                mcp_types.CallToolResult(
+                    content=[mcp_types.TextContent(type="text", text="got-input")]
                 )
             )
-        return mcp.types.ServerResult(
-            mcp.types.CallToolResult.model_validate(
+        return mcp_types.ServerResult(
+            mcp_types.CallToolResult.model_validate(
                 {
                     "content": [],
                     "resultType": "input_required",
@@ -73,7 +73,7 @@ def _install_need_input_mrtr() -> None:
             )
         )
 
-    mcp._mcp_server.request_handlers[mcp.types.CallToolRequest] = handler
+    mcp._mcp_server.request_handlers[mcp_types.CallToolRequest] = handler
 
 
 _install_need_input_mrtr()

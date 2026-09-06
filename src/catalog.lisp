@@ -10,13 +10,24 @@
                   "value" (mcp-protocol:json-object "type" "string"))
     "required" #("value"))))
 
+(defun %need-input-handler (waiting-box args)
+  (declare (ignore args))
+  (if (car waiting-box)
+      (progn
+        (setf (car waiting-box) nil)
+        (mcp-protocol:request-elicitation (%elicitation-params)))
+      (progn
+        (setf (car waiting-box) t)
+        (mcp-protocol:tool-result
+         (list (mcp-protocol:make-text-content "got-input"))))))
+
 (defun make-parity-server (&key (name "mcp-parity-lisp") (version "0.1.0"))
   (let ((server (make-instance 'mcp-protocol:mcp-server
                                :name name :version version
                                :instructions "stdio dual-era parity fixture"))
         ;; tools/call dispatch does not yet hand inputResponses to the handler.
         ;; First call returns input_required; the client's MRTR retry completes.
-        (waiting t))
+        (waiting-box (list t)))
     (mcp-protocol:register-tool
      server
      (mcp-protocol:make-mcp-tool
@@ -36,15 +47,7 @@
       "need-input" :description "trigger elicitation / input_required"
       :input-schema (mcp-protocol:json-object "type" "object")
       :handler (lambda (args)
-                 (declare (ignore args))
-                 (if waiting
-                     (progn
-                       (setf waiting nil)
-                       (mcp-protocol:request-elicitation (%elicitation-params)))
-                     (progn
-                       (setf waiting t)
-                       (mcp-protocol:tool-result
-                        (list (mcp-protocol:make-text-content "got-input")))))))))
+                 (%need-input-handler waiting-box args))))
     (mcp-protocol:register-resource
      server
      (mcp-protocol:make-mcp-resource
