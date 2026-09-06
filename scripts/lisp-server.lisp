@@ -30,12 +30,15 @@
   (call-with-ci-muffles
    (lambda ()
      (%maybe-register-workspace)
-     (when (asdf:find-system "cl-repository-client" nil)
-       (asdf:load-system "cl-repository-client")
-       (uiop:symbol-call :cl-repository-client/asdf-integration
-                         :configure-asdf-source-registry)
-       (uiop:symbol-call :cl-repository-client/asdf-integration
-                         :load-system-init-files))
+     ;; Prefer the workspace tree. cl-repo init-files preload natives (vllm)
+     ;; and can SIGKILL this stdio child before mcp-serve starts.
+     (unless (asdf:find-system "mcp-backend-stdio" nil)
+       (when (asdf:find-system "cl-repository-client" nil)
+         (asdf:load-system "cl-repository-client")
+         (uiop:symbol-call :cl-repository-client/asdf-integration
+                           :configure-asdf-source-registry)
+         (uiop:symbol-call :cl-repository-client/asdf-integration
+                           :load-system-init-files)))
      (asdf:load-system "mcp-backend-stdio")
      (asdf:load-system "rpc-protocol-json"))))
 
@@ -51,10 +54,21 @@
                   "value" (mcp-protocol:json-object "type" "string"))
     "required" #("value"))))
 
+(defun %need-input-handler (waiting-box args)
+  (declare (ignore args))
+  (if (car waiting-box)
+      (progn
+        (setf (car waiting-box) nil)
+        (mcp-protocol:request-elicitation (%elicitation-params)))
+      (progn
+        (setf (car waiting-box) t)
+        (mcp-protocol:tool-result
+         (list (mcp-protocol:make-text-content "got-input"))))))
+
 (let ((server (make-instance 'mcp-protocol:mcp-server
                              :name "mcp-parity-lisp" :version "0.1.0"
                              :instructions "stdio dual-era parity fixture"))
-      (waiting t))
+      (waiting-box (list t)))
   (mcp-protocol:register-tool
    server
    (mcp-protocol:make-mcp-tool
@@ -74,15 +88,7 @@
     "need-input" :description "trigger elicitation / input_required"
     :input-schema (mcp-protocol:json-object "type" "object")
     :handler (lambda (args)
-               (declare (ignore args))
-               (if waiting
-                   (progn
-                     (setf waiting nil)
-                     (mcp-protocol:request-elicitation (%elicitation-params)))
-                   (progn
-                     (setf waiting t)
-                     (mcp-protocol:tool-result
-                      (list (mcp-protocol:make-text-content "got-input"))))))))
+               (%need-input-handler waiting-box args))))
   (mcp-protocol:register-resource
    server
    (mcp-protocol:make-mcp-resource
