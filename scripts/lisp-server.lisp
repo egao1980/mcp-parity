@@ -25,6 +25,16 @@
       (asdf:initialize-source-registry
        `(:source-registry (:tree ,ws) :inherit-configuration)))))
 
+(defun %maybe-register-ci-client ()
+  "setup-lisp without the ci-base image (macOS, Windows) stages the client
+under CL_REPOSITORY_DEST, which no global source registry points at."
+  (let ((dest (uiop:getenv "CL_REPOSITORY_DEST")))
+    (when (and dest (plusp (length dest))
+               (not (asdf:find-system "cl-repository-client" nil)))
+      (asdf:initialize-source-registry
+       `(:source-registry (:tree ,(uiop:ensure-directory-pathname dest))
+                          :inherit-configuration)))))
+
 (let ((*standard-output* *error-output*)
       (*trace-output* *error-output*))
   (call-with-ci-muffles
@@ -33,6 +43,7 @@
      ;; Prefer the workspace tree. cl-repo init-files preload natives (vllm)
      ;; and can SIGKILL this stdio child before mcp-serve starts.
      (unless (asdf:find-system "mcp-backend-stdio" nil)
+       (%maybe-register-ci-client)
        (when (asdf:find-system "cl-repository-client" nil)
          (asdf:load-system "cl-repository-client")
          (uiop:symbol-call :cl-repository-client/asdf-integration
